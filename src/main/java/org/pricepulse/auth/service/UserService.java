@@ -8,6 +8,8 @@ import org.pricepulse.auth.constants.UserRolesEnum;
 import org.pricepulse.auth.domain.entity.User;
 import org.pricepulse.auth.dto.request.RegisterRequestDTO;
 import org.pricepulse.auth.dto.response.RegisterResponseDTO;
+import org.pricepulse.auth.exception.generic.DuplicateResourceException;
+import org.pricepulse.auth.exception.generic.NotFoundException;
 import org.pricepulse.auth.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +28,7 @@ public class UserService {
     log.info("Saving User {}", user.getEmail());
     if(userRepository.existsByEmail(user.getEmail())) {
       log.info("User with email {} already exists", user.getEmail());
-      throw new RuntimeException("User with email " + user.getEmail() + " already exists");
+      throw new DuplicateResourceException("User with email " + user.getEmail() + " already exists");
     }
     return userRepository.save(user);
   }
@@ -35,14 +37,14 @@ public class UserService {
   public User fetchUserByEmail(String email) {
     log.info("Fetching User {}", email);
     return userRepository.findByEmail(email).orElseThrow(
-        () -> new RuntimeException("User with email " + email + " not found")
+        () -> new NotFoundException("User with email " + email + " not found")
     );
   }
 
   public RegisterResponseDTO createUser(RegisterRequestDTO requestDTO) {
     if (userRepository.existsByEmail(requestDTO.email())) {
       log.error("User with email {} already exists", requestDTO.email());
-      throw new RuntimeException("User with email " + requestDTO.email() + " already exists");
+      throw new DuplicateResourceException("User with email " + requestDTO.email() + " already exists");
     }
     String hashPassword = securityConfig.passwordEncoder().encode(requestDTO.password());
 
