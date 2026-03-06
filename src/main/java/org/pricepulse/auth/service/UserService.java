@@ -24,15 +24,6 @@ public class UserService {
   private final UserRepository userRepository;
   private final SecurityConfig securityConfig;
 
-  public User saveUser(User user) {
-    log.info("Saving User {}", user.getEmail());
-    if(userRepository.existsByEmail(user.getEmail())) {
-      log.info("User with email {} already exists", user.getEmail());
-      throw new DuplicateResourceException("User with email " + user.getEmail() + " already exists");
-    }
-    return userRepository.save(user);
-  }
-
   @Transactional(readOnly = true)
   public User fetchUserByEmail(String email) {
     log.info("Fetching User {}", email);

@@ -10,3 +10,7 @@ spring:
     enabled: true
   jackson:
     time-zone: UTC
+server:
+  port: 8080
+  servlet:
+    context-path: /auth/v1
