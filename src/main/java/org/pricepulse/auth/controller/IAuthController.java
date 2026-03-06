@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@RequestMapping("${api.baseurl}")
+@RequestMapping("/users")
 public interface IAuthController {
 
   @Operation(
