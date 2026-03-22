@@ -13,7 +13,7 @@ import org.pricepulse.auth.dto.request.RegisterRequestDTO;
 import org.pricepulse.auth.dto.response.RegisterResponseDTO;
 import org.pricepulse.auth.exception.generic.DuplicateResourceException;
 import org.pricepulse.auth.exception.generic.NotFoundException;
-import org.pricepulse.auth.repository.UserRepository;
+import org.pricepulse.auth.domain.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;

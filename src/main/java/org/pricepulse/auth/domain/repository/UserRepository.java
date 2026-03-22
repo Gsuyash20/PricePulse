@@ -1,4 +1,4 @@
-package org.pricepulse.auth.repository;
+package org.pricepulse.auth.domain.repository;
 
 import org.pricepulse.auth.domain.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;

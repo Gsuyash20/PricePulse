@@ -10,11 +10,12 @@ import org.pricepulse.auth.dto.request.RegisterRequestDTO;
 import org.pricepulse.auth.dto.response.RegisterResponseDTO;
 import org.pricepulse.auth.exception.generic.DuplicateResourceException;
 import org.pricepulse.auth.exception.generic.NotFoundException;
-import org.pricepulse.auth.repository.UserRepository;
+import org.pricepulse.auth.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -30,6 +31,11 @@ public class UserService {
     return userRepository.findByEmail(email).orElseThrow(
         () -> new NotFoundException("User with email " + email + " not found")
     );
+  }
+
+  @Transactional(readOnly = true)
+  public User fetchUserById(String userId) {
+    return userRepository.findById(UUID.fromString(userId)).orElse(null);
   }
 
   public RegisterResponseDTO createUser(RegisterRequestDTO requestDTO) {
