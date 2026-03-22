@@ -4,12 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.pricepulse.auth.config.JwtConfigProperties;
 import org.pricepulse.auth.config.SecurityConfig;
+import org.pricepulse.auth.constants.AuthRelatedEnum;
 import org.pricepulse.auth.domain.entity.User;
 import org.pricepulse.auth.dto.request.LoginRequestDTO;
 import org.pricepulse.auth.dto.response.LoginResponseDTO;
 import org.pricepulse.auth.exception.generic.InvalidInputException;
 import org.pricepulse.auth.exception.generic.NotFoundException;
-import org.pricepulse.auth.repository.UserRepository;
+import org.pricepulse.auth.domain.repository.UserRepository;
 import org.pricepulse.auth.security.JwtService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +40,7 @@ public class AuthService {
 
     String token = jwtService.generateToken(existingUser);
     Instant expiresIn = Instant.now().plusSeconds(jwtConfigProperties.getExpirationTime());
-    return new LoginResponseDTO(token, "Bearer", expiresIn);
+    return new LoginResponseDTO(token, AuthRelatedEnum.BEARER.name(), expiresIn);
 
   }
 }
