@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.pricepulse.auth.config.JwtConfigProperties;
 import org.pricepulse.auth.config.SecurityConfig;
 import org.pricepulse.auth.constants.AuthRelatedEnum;
+import org.pricepulse.auth.domain.entity.RefreshToken;
 import org.pricepulse.auth.domain.entity.User;
 import org.pricepulse.auth.dto.request.LoginRequestDTO;
 import org.pricepulse.auth.dto.response.LoginResponseDTO;
@@ -27,20 +28,22 @@ public class AuthService {
   private final UserRepository userRepository;
   private final SecurityConfig securityConfig;
   private final JwtConfigProperties jwtConfigProperties;
+  private final RefreshTokenService refreshTokenService;
 
   public LoginResponseDTO loginUser(LoginRequestDTO loginRequestDTO) {
     User existingUser = userRepository.findByEmail(loginRequestDTO.email()).orElseThrow(
         () -> new NotFoundException("Invalid credentials")
     );
 
-    if(!securityConfig.passwordEncoder().matches(loginRequestDTO.password(), existingUser.getPasswordHash())){
+    if (!securityConfig.passwordEncoder().matches(loginRequestDTO.password(), existingUser.getPasswordHash())) {
       log.error("Invalid password for user {}", loginRequestDTO.email());
       throw new InvalidInputException("Invalid credentials");
     }
 
     String token = jwtService.generateToken(existingUser);
+    String refreshToken = refreshTokenService.createRefreshToken(existingUser);
     Instant expiresIn = Instant.now().plusSeconds(jwtConfigProperties.getExpirationTime());
-    return new LoginResponseDTO(token, AuthRelatedEnum.BEARER.name(), expiresIn);
+    return new LoginResponseDTO(token, refreshToken, AuthRelatedEnum.BEARER.name(), expiresIn);
 
   }
 }

@@ -14,8 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
-@RequestMapping("/public/users")
+@RequestMapping("/users")
 public interface IAuthController {
 
   @Operation(
@@ -27,7 +28,7 @@ public interface IAuthController {
       @ApiResponse(responseCode = "400", description = "Validation failed"),
       @ApiResponse(responseCode = "409", description = "Email already exists")
   })
-  @PostMapping("/register")
+  @PostMapping("/public/register")
   ResponseEntity<@NonNull RegisterResponseDTO> registerUser(@Valid @NotNull @RequestBody RegisterRequestDTO requestDTO);
 
   @Operation(
@@ -39,6 +40,20 @@ public interface IAuthController {
       @ApiResponse(responseCode = "400", description = "Validation failed"),
       @ApiResponse(responseCode = "409", description = "Email already exists")
   })
-  @PostMapping("/login")
+  @PostMapping("/public/login")
   ResponseEntity<@NonNull LoginResponseDTO> loginUser(@Valid @RequestBody LoginRequestDTO requestDTO);
+
+  @Operation(
+      summary = "refresh the login token",
+      description = "Refresh token"
+  )
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "201", description = "Refreshed token"),
+      @ApiResponse(responseCode = "400", description = "Validation failed"),
+      @ApiResponse(responseCode = "409", description = "Email already exists")
+  })
+  @PostMapping("/refresh-token")
+  ResponseEntity<@NonNull LoginResponseDTO> refreshToken(@RequestParam String refreshToken);
+
+  // todo: add logout endpoint
 }
