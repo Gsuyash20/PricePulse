@@ -43,7 +43,7 @@ public class AuthService {
     String token = jwtService.generateToken(existingUser);
     String refreshToken = refreshTokenService.createRefreshToken(existingUser);
     Instant expiresIn = Instant.now().plusSeconds(jwtConfigProperties.getExpirationTime());
-    return new LoginResponseDTO(token, refreshToken, AuthRelatedEnum.BEARER.name(), expiresIn);
+    return new LoginResponseDTO(token, refreshToken, AuthRelatedEnum.BEARER.name(), expiresIn, existingUser.getId());
 
   }
 }

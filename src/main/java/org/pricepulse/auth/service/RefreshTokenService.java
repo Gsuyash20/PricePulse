@@ -74,7 +74,7 @@ public class RefreshTokenService {
     String newAccessToken = jwtService.generateToken(token.getUser());
     Instant expiresIn = Instant.now().plusSeconds(jwtConfigProperties.getExpirationTime());
 
-    return new LoginResponseDTO(newAccessToken, refreshToken, AuthRelatedEnum.BEARER.name(), expiresIn);
+    return new LoginResponseDTO(newAccessToken, refreshToken, AuthRelatedEnum.BEARER.name(), expiresIn, null);
   }
 
 

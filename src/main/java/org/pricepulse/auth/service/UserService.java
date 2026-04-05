@@ -7,6 +7,7 @@ import org.pricepulse.auth.constants.MessageConstants;
 import org.pricepulse.auth.constants.UserRolesEnum;
 import org.pricepulse.auth.domain.entity.User;
 import org.pricepulse.auth.dto.request.RegisterRequestDTO;
+import org.pricepulse.auth.dto.request.RoleChangeDTO;
 import org.pricepulse.auth.dto.response.RegisterResponseDTO;
 import org.pricepulse.auth.exception.generic.DuplicateResourceException;
 import org.pricepulse.auth.exception.generic.NotFoundException;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -57,5 +59,14 @@ public class UserService {
 
     return new RegisterResponseDTO(requestDTO.email(), MessageConstants.USER_CREATED_SUCCESSFULLY, user.getId());
 
+  }
+
+  public void changeUserRole(RoleChangeDTO requestDTO) {
+    User user = userRepository.findById(UUID.fromString(requestDTO.userId())).orElse(null);
+    if (user == null) {
+      throw new NotFoundException("User with id " + requestDTO.userId() + " not found");
+    }
+    user.setRole(Objects.equals(requestDTO.role(), UserRolesEnum.USER.name()) ? UserRolesEnum.USER.name() :  UserRolesEnum.ADMIN.name());
+    userRepository.save(user);
   }
 }
