@@ -52,7 +52,7 @@ public class RefreshTokenService {
         .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
 
     if (refreshToken.isRevoked() || refreshToken.getExpiryDate().isBefore(Instant.now())) {
-      throw new ServiceException("Expired or revoked refresh token");
+      throw new InvalidInputException("Expired or revoked refresh token");
     }
 
     return refreshToken;
@@ -75,5 +75,12 @@ public class RefreshTokenService {
     Instant expiresIn = Instant.now().plusSeconds(jwtConfigProperties.getExpirationTime());
 
     return new LoginResponseDTO(newAccessToken, refreshToken, AuthRelatedEnum.BEARER.name(), expiresIn);
+  }
+
+
+  public void logOutUser(String refreshToken) {
+    RefreshToken token = validateRefreshToken(refreshToken);
+    token.setRevoked(Boolean.TRUE);
+    refreshTokenRepository.save(token);
   }
 }

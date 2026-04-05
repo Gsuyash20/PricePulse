@@ -55,5 +55,15 @@ public interface IAuthController {
   @PostMapping("/refresh-token")
   ResponseEntity<@NonNull LoginResponseDTO> refreshToken(@RequestParam String refreshToken);
 
-  // todo: add logout endpoint
+  @Operation(
+      summary = "logout the user",
+      description = "Logout user"
+  )
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "201", description = "Logout user"),
+      @ApiResponse(responseCode = "400", description = "Validation failed"),
+      @ApiResponse(responseCode = "409", description = "Email already exists")
+  })
+  @PostMapping("/logout")
+  ResponseEntity<Void> logoutUser(@RequestParam String refreshToken);
 }

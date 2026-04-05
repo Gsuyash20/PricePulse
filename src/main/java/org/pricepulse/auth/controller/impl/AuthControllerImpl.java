@@ -46,4 +46,10 @@ public class AuthControllerImpl implements IAuthController {
 
     return ResponseEntity.ok(responseDTO);
   }
+
+  @Override
+  public ResponseEntity<@NonNull Void> logoutUser(String refreshToken) {
+    refreshTokenService.logOutUser(refreshToken);
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+  }
 }
