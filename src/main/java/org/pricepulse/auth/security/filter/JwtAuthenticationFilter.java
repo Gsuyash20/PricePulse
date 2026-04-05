@@ -11,6 +11,7 @@ import org.pricepulse.auth.security.JwtService;
 import org.pricepulse.auth.service.CustomUserDetailsService;
 import org.pricepulse.auth.service.UserService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -19,6 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -39,20 +41,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       return;
     }
 
-    jwtToken = authHeader.substring(AuthRelatedEnum.BEARER.getValue().length() +1);
-    userId = jwtService.extractUserId(jwtToken);
+    try {
+      jwtToken = authHeader.substring(AuthRelatedEnum.BEARER.getValue().length() +1);
+      userId = jwtService.extractUserId(jwtToken);
+      String role = jwtService.extractRole(jwtToken);
 
-    if(userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-      UserDetails user = customUserDetailsService.loadUserByUserName(userId);
-      if(user != null && jwtService.isTokenValid(jwtToken, UUID.fromString(userId))){
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-            user, null, Collections.emptyList());
-        authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+      if(userId != null && SecurityContextHolder.getContext().getAuthentication() == null
+          && Boolean.TRUE.equals(jwtService.isTokenValid(jwtToken, UUID.fromString(userId)))){
 
-        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-      }
+          UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+              userId, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
 
+          authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+          SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        }
+
+    } catch (Exception e) {
+      SecurityContextHolder.clearContext();
     }
+
     filterChain.doFilter(request, response);
   }
 }

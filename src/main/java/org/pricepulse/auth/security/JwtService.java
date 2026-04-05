@@ -25,7 +25,7 @@ import java.util.function.Function;
 public class JwtService {
   private final JwtConfigProperties jwtConfigProperties;
 
-  private SecretKey getSigningKey(){
+  private SecretKey getSigningKey() {
 //    // In a real application, you should use a more secure way to generate and store the secret key
 //    return Keys.hmacShaKeyFor(jwtConfigProperties.getSecret().getBytes(StandardCharsets.UTF_8));
     log.debug("JWT secret length: {}", jwtConfigProperties.getSecret().length());
@@ -33,7 +33,7 @@ public class JwtService {
     return Keys.hmacShaKeyFor(keyBytes);
   }
 
-  public String generateToken(User user){
+  public String generateToken(User user) {
     Instant now = Instant.now();
     return Jwts.builder()
         .subject(user.getId().toString())
@@ -46,15 +46,19 @@ public class JwtService {
   }
 
   /*
-    * Extracts the user ID from the JWT token.
-    * @param token the JWT token
+   * Extracts the user ID from the JWT token.
+   * @param token the JWT token
    */
-  public String extractUserId(String token){
+  public String extractUserId(String token) {
     return extractClaim(token, Claims::getSubject);
   }
 
-  public Date extractExpiration(String token){
+  public Date extractExpiration(String token) {
     return extractClaim(token, Claims::getExpiration);
+  }
+
+  public String extractRole(String token) {
+    return extractClaim(token, claims -> claims.get(JwtPayloadClaimsEnum.ROLE.name()).toString());
   }
 
   private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {

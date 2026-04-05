@@ -6,7 +6,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.pricepulse.auth.config.SecurityConfig;
 import org.pricepulse.auth.constants.MessageConstants;
 import org.pricepulse.auth.domain.entity.User;
 import org.pricepulse.auth.dto.request.RegisterRequestDTO;
@@ -33,9 +32,6 @@ class UserServiceTest {
 
   @Mock
   private UserRepository userRepository;
-
-  @Mock
-  private SecurityConfig securityConfig;
 
   @Mock
   private PasswordEncoder passwordEncoder;
@@ -86,7 +82,6 @@ class UserServiceTest {
         .build();
 
     when(userRepository.existsByEmail(any())).thenReturn(Boolean.FALSE);
-    when(securityConfig.passwordEncoder()).thenReturn(passwordEncoder);
     when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
     when(userRepository.save(any())).thenReturn(expectedUser);
 
