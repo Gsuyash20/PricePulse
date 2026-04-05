@@ -2,16 +2,16 @@ package org.pricepulse.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.pricepulse.auth.config.SecurityConfig;
 import org.pricepulse.auth.constants.MessageConstants;
 import org.pricepulse.auth.constants.UserRolesEnum;
 import org.pricepulse.auth.domain.entity.User;
+import org.pricepulse.auth.domain.repository.UserRepository;
 import org.pricepulse.auth.dto.request.RegisterRequestDTO;
 import org.pricepulse.auth.dto.request.RoleChangeDTO;
 import org.pricepulse.auth.dto.response.RegisterResponseDTO;
 import org.pricepulse.auth.exception.generic.DuplicateResourceException;
 import org.pricepulse.auth.exception.generic.NotFoundException;
-import org.pricepulse.auth.domain.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +25,7 @@ import java.util.UUID;
 @Slf4j
 public class UserService {
   private final UserRepository userRepository;
-  private final SecurityConfig securityConfig;
+  private final PasswordEncoder passwordEncoder;
 
   @Transactional(readOnly = true)
   public User fetchUserByEmail(String email) {
@@ -45,7 +45,7 @@ public class UserService {
       log.error("User with email {} already exists", requestDTO.email());
       throw new DuplicateResourceException("User with email " + requestDTO.email() + " already exists");
     }
-    String hashPassword = securityConfig.passwordEncoder().encode(requestDTO.password());
+    String hashPassword = passwordEncoder.encode(requestDTO.password());
 
     User user = User.builder()
         .createdAt(Instant.now())

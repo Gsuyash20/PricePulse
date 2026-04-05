@@ -51,7 +51,15 @@ public class RefreshTokenService {
     RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(tokenHash)
         .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
 
-    if (refreshToken.isRevoked() || refreshToken.getExpiryDate().isBefore(Instant.now())) {
+    if (refreshToken.isRevoked()) {
+      //  revoke all tokens of user
+      refreshTokenRepository.revokeAllByUser(refreshToken.getUser());
+
+      throw new InvalidInputException("Refresh token reuse detected");
+    }
+
+
+    if (refreshToken.getExpiryDate().isBefore(Instant.now())) {
       throw new InvalidInputException("Expired or revoked refresh token");
     }
 
@@ -70,11 +78,17 @@ public class RefreshTokenService {
 
   public LoginResponseDTO refreshToken(String refreshToken) {
     RefreshToken token = validateRefreshToken(refreshToken);
+    // revoke the old token
+    token.setRevoked(Boolean.TRUE);
+    refreshTokenRepository.save(token);
+
+    // create new refresh token
+    String newRefreshToken = createRefreshToken(token.getUser());
 
     String newAccessToken = jwtService.generateToken(token.getUser());
     Instant expiresIn = Instant.now().plusSeconds(jwtConfigProperties.getExpirationTime());
 
-    return new LoginResponseDTO(newAccessToken, refreshToken, AuthRelatedEnum.BEARER.name(), expiresIn, null);
+    return new LoginResponseDTO(newAccessToken, newRefreshToken, AuthRelatedEnum.BEARER.name(), expiresIn, null);
   }
 
 
