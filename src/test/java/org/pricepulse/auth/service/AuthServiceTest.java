@@ -6,7 +6,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.pricepulse.auth.config.JwtConfigProperties;
-import org.pricepulse.auth.config.SecurityConfig;
 import org.pricepulse.auth.constants.AuthRelatedEnum;
 import org.pricepulse.auth.domain.entity.User;
 import org.pricepulse.auth.dto.request.LoginRequestDTO;
@@ -38,9 +37,6 @@ class AuthServiceTest {
   private UserRepository userRepository;
 
   @Mock
-  private SecurityConfig securityConfig;
-
-  @Mock
   private JwtConfigProperties jwtConfigProperties;
 
   @Mock
@@ -68,7 +64,6 @@ class AuthServiceTest {
         .build();
 
     when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-    when(securityConfig.passwordEncoder()).thenReturn(passwordEncoder);
     when(passwordEncoder.matches(password, hashedPassword)).thenReturn(true);
     when(jwtService.generateToken(user)).thenReturn(accessToken);
     when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshToken);
@@ -109,7 +104,6 @@ class AuthServiceTest {
     LoginRequestDTO requestDTO = new LoginRequestDTO(email, password);
 
     when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-    when(securityConfig.passwordEncoder()).thenReturn(passwordEncoder);
     when(passwordEncoder.matches(password, hashedPassword)).thenReturn(false);
 
     assertThrows(InvalidInputException.class, () -> authService.loginUser(requestDTO));

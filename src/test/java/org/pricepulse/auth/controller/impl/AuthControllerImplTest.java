@@ -12,6 +12,7 @@ import org.pricepulse.auth.dto.request.RegisterRequestDTO;
 import org.pricepulse.auth.dto.response.LoginResponseDTO;
 import org.pricepulse.auth.dto.response.RegisterResponseDTO;
 import org.pricepulse.auth.exception.generic.DuplicateResourceException;
+import org.pricepulse.auth.exception.generic.InvalidInputException;
 import org.pricepulse.auth.service.AuthService;
 import org.pricepulse.auth.service.RefreshTokenService;
 import org.pricepulse.auth.service.UserService;
@@ -27,7 +28,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -64,7 +65,7 @@ class AuthControllerImplTest {
     registerResponseDTO = new RegisterResponseDTO(email, password, id);
 
     loginRequestDTO = new LoginRequestDTO(email, password);
-    loginResponseDTO = new LoginResponseDTO("accessToken", "refreshToken", "BEARER", Instant.now());
+    loginResponseDTO = new LoginResponseDTO("accessToken", "refreshToken", "BEARER", Instant.now(), UUID.randomUUID());
   }
 
   public static String asJsonString(final Object obj) {
@@ -164,6 +165,46 @@ class AuthControllerImplTest {
             .post("/users/logout")
             .param("refreshToken", refreshToken))
         .andExpect(status().isNoContent());
+
+    verify(refreshTokenService, times(1)).logOutUser(refreshToken);
+  }
+
+  @Test
+  void testLoginUserWhenInvalidCredentialsThenThrowException() {
+    when(authService.loginUser(any())).thenThrow(new InvalidInputException("Invalid credentials"));
+
+    assertThrows(
+        InvalidInputException.class,
+        () -> authController.loginUser(loginRequestDTO)
+    );
+
+    verify(authService, times(1)).loginUser(loginRequestDTO);
+  }
+
+  @Test
+  void testRefreshTokenWhenInvalidTokenThenThrowException() {
+    String refreshToken = "invalidRefreshToken";
+
+    when(refreshTokenService.refreshToken(refreshToken)).thenThrow(new InvalidInputException("Invalid refresh token"));
+
+    assertThrows(
+        InvalidInputException.class,
+        () -> authController.refreshToken(refreshToken)
+    );
+
+    verify(refreshTokenService, times(1)).refreshToken(refreshToken);
+  }
+
+  @Test
+  void testLogoutUserWhenInvalidTokenThenThrowException() {
+    String refreshToken = "invalidRefreshToken";
+
+    doThrow(new InvalidInputException("Invalid refresh token")).when(refreshTokenService).logOutUser(refreshToken);
+
+    assertThrows(
+        InvalidInputException.class,
+        () -> authController.logoutUser(refreshToken)
+    );
 
     verify(refreshTokenService, times(1)).logOutUser(refreshToken);
   }

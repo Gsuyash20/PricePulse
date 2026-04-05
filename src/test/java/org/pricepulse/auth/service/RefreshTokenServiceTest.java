@@ -22,6 +22,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -151,12 +152,14 @@ class RefreshTokenServiceTest {
     when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(refreshToken));
     when(jwtService.generateToken(user)).thenReturn(newAccessToken);
     when(jwtConfigProperties.getExpirationTime()).thenReturn(expirationTime);
+    when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(null);
 
     var response = refreshTokenService.refreshToken(refreshTokenStr);
 
     assertNotNull(response);
     assertEquals(newAccessToken, response.accessToken());
-    assertEquals(refreshTokenStr, response.refreshToken());
+    assertNotNull(response.refreshToken());
+    assertNotEquals(refreshTokenStr, response.refreshToken());
     assertEquals(AuthRelatedEnum.BEARER.name(), response.tokenType());
     assertNotNull(response.expiresIn());
   }
