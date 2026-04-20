@@ -205,7 +205,7 @@ Defined in `application.yml`:
 
 ## 🔐 Security Considerations
 
-- Passwords hashed using secure algorithms
+- Passwords hashed using Argon2id with Spring Security's recommended defaults (19MB memory cost, 2 iterations) — resistant to GPU-based brute-force attacks
 - JWT tokens signed and validated
 - Access and refresh tokens separated
 - Refresh token rotation prevents replay attacks
