@@ -45,6 +45,9 @@ class AuthServiceTest {
   @Mock
   private PasswordEncoder passwordEncoder;
 
+  @Mock
+  private AuditService auditService;
+
   @Test
   void testLoginUserWhenValidCredentialsShouldReturnLoginResponse() {
     String email = "test@example.com";

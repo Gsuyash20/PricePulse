@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.pricepulse.auth.config.JwtConfigProperties;
+import org.pricepulse.auth.constants.AuthRelatedEnum;
 import org.pricepulse.auth.constants.JwtPayloadClaimsEnum;
 import org.pricepulse.auth.domain.entity.User;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 @Slf4j
 public class JwtService {
+  public static final String TOKEN_TYPE = "token_type";
   private final JwtConfigProperties jwtConfigProperties;
 
   private SecretKey getSigningKey() {
@@ -39,6 +41,8 @@ public class JwtService {
         .subject(user.getId().toString())
         .claim(JwtPayloadClaimsEnum.EMAIL.name(), user.getEmail())
         .claim(JwtPayloadClaimsEnum.ROLE.name(), user.getRole())
+        .claim(TOKEN_TYPE, AuthRelatedEnum.ACCESS.getValue())
+        .claim("jti", UUID.randomUUID().toString())
         .issuedAt(Date.from(now))
         .expiration(Date.from(Instant.now().plusSeconds(jwtConfigProperties.getExpirationTime())))
         .signWith(getSigningKey())
@@ -59,6 +63,10 @@ public class JwtService {
 
   public String extractRole(String token) {
     return extractClaim(token, claims -> claims.get(JwtPayloadClaimsEnum.ROLE.name()).toString());
+  }
+
+  public String extractTokenType(String token) {
+    return extractClaim(token, claims -> claims.get(TOKEN_TYPE).toString());
   }
 
   private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {

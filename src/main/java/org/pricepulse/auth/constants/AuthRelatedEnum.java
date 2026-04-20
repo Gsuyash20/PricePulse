@@ -5,7 +5,8 @@ import lombok.Getter;
 @Getter
 public enum AuthRelatedEnum {
   AUTHORIZATION("Authorization"),
-  BEARER("Bearer");
+  BEARER("Bearer"),
+  ACCESS("Access");
 
   private final String value;
 
