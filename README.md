@@ -1,145 +1,148 @@
-# Auth Microservice
+# 🔐 PricePulse — Auth Service
 
-A production-grade authentication and authorization microservice built with Spring Boot, designed for **secure, scalable, and observable systems**.
-
-This service goes beyond basic JWT authentication by incorporating **refresh token rotation, audit logging, request context propagation, and security-focused design patterns** used in real-world backend systems.
+> Production-grade authentication and authorization microservice built with **Java 21 + Spring Boot 3.5**, designed for security, scalability, and observability.
 
 ---
 
-## 🧠 Architecture Highlights
+## 🧠 What Makes This Different
 
-### 1. Stateless Authentication with JWT
+Most auth services stop at "issue a JWT." This one goes further:
 
-- Access tokens used for API authorization
-- No server-side session storage
-- Improves scalability in distributed systems
+- **Argon2id password hashing** — memory-hard, GPU-resistant (19MB memory cost, 2 iterations)
+- **Refresh token rotation with reuse detection** — compromised tokens are invalidated on reuse
+- **Redis sliding window rate limiting** — brute-force protection scoped per email (5 attempts / 15 min), with fail-open fallback if Redis is unavailable
+- **Custom `PulseContext`** — propagates IP, User-Agent, Trace ID, and Request ID across all layers without repeated parsing
+- **Structured audit logging** — every critical security event logged as JSON for fraud detection and observability
+- **Generic error messages** — prevents user enumeration attacks
+
+---
+
+## 🏗️ Architecture Highlights
+
+### 1. Stateless JWT Authentication
+- Short-lived access tokens (15 min) for API authorization
+- No server-side session storage — scales horizontally without sticky sessions
 
 ### 2. Refresh Token Rotation
-
-- Refresh tokens stored securely in DB (hashed)
-- Each refresh invalidates the previous token
-- Prevents replay attacks and token reuse
+- Refresh tokens stored as hashed values in PostgreSQL
+- Each use invalidates the previous token
+- Reuse of a revoked token triggers full session invalidation
 
 ### 3. Custom Security Layer
+- `JwtAuthenticationToken` replaces Spring's default token
+- Carries `PulseContext` directly in the `SecurityContext`
+- Eliminates redundant DB calls per request
 
-- Implemented custom `JwtAuthenticationToken`
-- Integrated with Spring Security context
-- Eliminated redundant DB calls in request flow
+### 4. Request Context Propagation (`PulseContext`)
+Carries per-request metadata across all layers:
+- IP Address
+- User Agent
+- Trace ID
+- Request ID
 
-### 4. Request Context Propagation
+### 5. Audit Logging
+Structured JSON logs for every critical event:
+- Login success / failure
+- Token refresh
+- Logout
 
-- Built `PulseContext` to carry:
-  - IP address
-  - User agent
-  - Trace ID
-  - Request ID
-- Attached to SecurityContext for cross-layer access
+Designed for integration with log aggregators (e.g. ELK, Grafana Loki) and fraud detection pipelines.
 
-### 5. Audit Logging System
-
-- Tracks critical security events:
-  - Login success/failure
-  - Token refresh
-  - Logout
-- Structured logs with metadata (JSON)
-- Designed for fraud detection and observability
-
-### 6. Security-First Design Decisions
-
-- Token type separation (ACCESS vs REFRESH)
-- Password hashing using secure algorithms
-- Generic error messages to prevent user enumeration
-- Prepared for rate limiting and account lock mechanisms
+### 6. Redis Sliding Window Rate Limiting
+- Implemented using Redis `ZSet` — no external rate limiting library
+- Each failed attempt stored as a timestamped entry (score = epoch ms)
+- Stale entries outside the 15-min window evicted before each check
+- Scoped per email — harder to bypass than IP-based limiting
+- Fail-open on Redis unavailability — preserves service availability as a deliberate tradeoff
 
 ---
 
 ## 🚀 Features
 
-- Secure user registration and login
-- JWT-based stateless authentication
-- Refresh token rotation with reuse detection
-- Role-based authorization
-- Custom authentication token implementation
-- Request context propagation across layers
-- Structured audit logging for security events
-- Swagger API documentation
-- Flyway-based schema migration
-- Dockerized deployment
+| Feature | Status |
+|---|---|
+| User registration & login | ✅ |
+| JWT access + refresh tokens | ✅ |
+| Refresh token rotation & reuse detection | ✅ |
+| Argon2id password hashing | ✅ |
+| Role-based authorization (USER, ADMIN) | ✅ |
+| Redis sliding window rate limiting | ✅ |
+| Request context propagation (PulseContext) | ✅ |
+| Structured audit logging (JSON) | ✅ |
+| Flyway schema migrations | ✅ |
+| Swagger / OpenAPI docs | ✅ |
+| Dockerized deployment | ✅ |
 
 ---
 
-## 🛠️ Technologies Used
+## 🛠️ Tech Stack
 
-- Java 21
-- Spring Boot
-- Spring Security
-- Spring Data JPA
-- Flyway
-- PostgreSQL
-- JWT (JJWT)
-- Lombok
-- SpringDoc OpenAPI
-- Docker Compose
+| Layer | Technology |
+|---|---|
+| Language | Java 21 |
+| Framework | Spring Boot 3.5 |
+| Security | Spring Security 6 |
+| Password Hashing | Argon2id (Spring Security Crypto) |
+| Token | JWT (JJWT) |
+| Rate Limiting | Redis 7 + ZSet (custom sliding window, no external library) |
+| Persistence | PostgreSQL 17 + Spring Data JPA |
+| Migrations | Flyway |
+| API Docs | SpringDoc OpenAPI (Swagger UI) |
+| Testing | JUnit 5 + Mockito |
+| Containerization | Docker + Docker Compose |
 
 ---
 
 ## ⚙️ Prerequisites
 
-- Java 21 or higher
-- Apache Maven 3.6+
-- PostgreSQL database (or Docker)
-- Git
+- Java 21+
+- Apache Maven 3.9+
+- Docker & Docker Compose (recommended)
+- PostgreSQL 17 (if running locally)
+- Redis 7 (if running locally)
 
 ---
 
-## 📦 Installation and Setup
+## 📦 Getting Started
 
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
-cd auth
+git clone https://github.com/Gsuyash20/PricePulse.git
+cd PricePulse/auth-service
 ```
 
-### 2. Environment Configuration
+### 2. Configure Environment
 
-Create a `.env` file:
+Create a `.env` file in the root:
 
 ```env
 DB_NAME=auth_db
 DB_USER=auth_user
 DB_PASSWORD=your_secure_password
-JWT_SECRET=your_jwt_secret_key_here
+JWT_SECRET=your_randomly_generated_secret_min_32_chars
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
 
-⚠️ Use a strong, randomly generated JWT secret in production.
+> ⚠️ Use a cryptographically random JWT secret in production (min. 256-bit).
 
----
-
-### 3. Database Setup
-
-#### Option A: Docker (Recommended)
+### 3. Run with Docker (Recommended)
 
 ```bash
 docker-compose up -d
 ```
 
-#### Option B: Local Setup
+This starts PostgreSQL, Redis, and the Auth Service together.
 
-- Install PostgreSQL
-- Create database manually
-
----
-
-### 4. Build and Run
+### 4. Run Locally
 
 ```bash
 mvn clean compile
 mvn spring-boot:run
 ```
 
-Service runs at:
-
+Service available at:
 ```
 http://localhost:8080/auth/v1
 ```
@@ -150,23 +153,23 @@ http://localhost:8080/auth/v1
 
 Base path: `/auth/v1/users`
 
-### Public Endpoints
+### Public
 
-- `POST /public/register` → Register user
-- `POST /public/login` → Login and get tokens
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/public/register` | Register a new user |
+| `POST` | `/public/login` | Login and receive access + refresh tokens |
 
-### Protected Endpoints
+### Protected (requires Bearer token)
 
-- `POST /refresh-token` → Refresh access token
-- `POST /logout` → Logout user
-- `GET /profile` → Fetch user profile
-- `PATCH /roles` → Update role (admin/internal)
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/refresh-token` | Rotate refresh token |
+| `POST` | `/logout` | Invalidate session |
+| `GET` | `/profile` | Fetch authenticated user profile |
+| `PATCH` | `/roles` | Update user role (ADMIN only) |
 
----
-
-## 📘 API Documentation
-
-Swagger UI:
+### Swagger UI
 
 ```
 http://localhost:8080/auth/v1/swagger-ui.html
@@ -176,11 +179,29 @@ http://localhost:8080/auth/v1/swagger-ui.html
 
 ## 🗄️ Database Schema
 
-Key tables:
+| Table | Purpose |
+|---|---|
+| `users` | User accounts (UUID, email, Argon2id hash, role) |
+| `refresh_tokens` | Hashed refresh tokens with expiry |
+| `audit_log` | Structured security event log |
 
-- `users` → user account data
-- `refresh_token` → refresh token storage
-- `audit_log` → security event logs
+Migrations managed by **Flyway** — versioned and reproducible.
+
+---
+
+## 🔐 Security Decisions
+
+| Decision | Rationale |
+|---|---|
+| **Argon2id over BCrypt** | Memory-hard hashing (19MB cost) kills GPU-based brute-force; winner of the Password Hashing Competition (2015) |
+| **Short-lived access tokens (15 min)** | Limits blast radius of a leaked token |
+| **Refresh token rotation** | Reuse of a revoked token triggers full session invalidation |
+| **Sliding window rate limiting** | No boundary burst vulnerability unlike fixed window; 5 failed attempts per 15-min rolling window per email |
+| **Email-scoped rate limiting** | Harder to bypass than IP-based; targets the actual attack vector |
+| **Fail-open on Redis unavailability** | Deliberate tradeoff — availability over strict rate limiting when Redis is down |
+| **Generic error messages** | `"Invalid credentials"` for both wrong email and wrong password — prevents user enumeration |
+| **Token type separation** | ACCESS and REFRESH tokens validated differently — prevents cross-type misuse |
+| **PulseContext in SecurityContext** | Request metadata (IP, trace ID, user agent) available in all layers without repeated parsing |
 
 ---
 
@@ -190,75 +211,34 @@ Key tables:
 mvn test
 ```
 
----
-
-## ⚙️ Configuration
-
-Defined in `application.yml`:
-
-- Database connection
-- JWT expiration (default: 3600s)
-- Server config (`/auth/v1`)
-- Flyway migrations
+Covers:
+- Unit tests with **JUnit 5 + Mockito**
+- Service layer logic (token generation, rotation, rate limiting, audit events)
+- Security filter chain behavior
 
 ---
 
-## 🔐 Security Considerations
-
-- Passwords hashed using secure algorithms
-- JWT tokens signed and validated
-- Access and refresh tokens separated
-- Refresh token rotation prevents replay attacks
-- Audit logs enable tracking suspicious activity
-- Designed for rate limiting and brute-force protection
-- No sensitive data exposed in logs
-
----
-
-## ⚖️ Design Decisions & Trade-offs
-
-- **Why JWT?**
-  Stateless authentication reduces server-side overhead
-
-- **Why Refresh Tokens?**
-  Enables short-lived access tokens without frequent logins
-
-- **Why Token Rotation?**
-  Prevents reuse of compromised tokens
-
-- **Why Audit Logging?**
-  Essential for monitoring, debugging, and fraud detection
-
-- **Why Custom Authentication Token?**
-  Enables attaching request context and avoiding repeated parsing
-
----
-
-## 🐳 Docker Deployment
+## 🐳 Docker
 
 ```bash
+# Build image
 mvn spring-boot:build-image
+
+# Start all services
 docker-compose up
 ```
 
 ---
 
-## 🤝 Contributing
+## 🔗 Related Services
 
-1. Fork the repo
-2. Create feature branch
-3. Make changes
-4. Add tests
-5. Submit PR
+| Service | Description |
+|---|---|
+| [Catalog Service](../catalog-service) | Price ingestion engine, anomaly detection, Kafka producer |
+| [Watch & Notification Service](../watch-service) | Watchlists, price drop alerts, email delivery |
 
 ---
 
 ## 📄 License
 
 MIT License
-
----
-
-## 📬 Support
-
-For issues or questions, open a GitHub issue.
