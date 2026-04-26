@@ -32,28 +32,43 @@ public class AuthService {
   private final JwtConfigProperties jwtConfigProperties;
   private final RefreshTokenService refreshTokenService;
   private final AuditService auditService;
+  private final RateLimitService rateLimitService;
 
   public LoginResponseDTO loginUser(LoginRequestDTO loginRequestDTO) {
-    User existingUser = userRepository.findByEmail(loginRequestDTO.email()).orElseThrow(
-        () -> new NotFoundException("Invalid credentials")
-    );
 
-    if (!passwordEncoder.matches(loginRequestDTO.password(), existingUser.getPasswordHash())) {
-      log.error("Invalid password for user {}", loginRequestDTO.email());
+    String emailKey = "login:user:" + loginRequestDTO.email();
+
+    rateLimitService.validateLoginAttempt(emailKey);
+
+    try {
+      User existingUser = userRepository.findByEmail(loginRequestDTO.email()).orElseThrow(
+          () -> new NotFoundException("Invalid credentials")
+      );
+
+      if (!passwordEncoder.matches(loginRequestDTO.password(), existingUser.getPasswordHash())) {
+        log.error("Invalid password for user {}", loginRequestDTO.email());
+        // Record the failed login attempt in cache
+        rateLimitService.recordFailedAttempts(emailKey);
+        throw new InvalidInputException("Invalid credentials");
+      }
+
+      // reset on success
+      rateLimitService.resetAttempts(emailKey);
+
+      String token = jwtService.generateToken(existingUser);
+      String refreshToken = refreshTokenService.createRefreshToken(existingUser);
+      Instant expiresIn = Instant.now().plusSeconds(jwtConfigProperties.getExpirationTime());
+
+      var authentication = SecurityContextHolder.getContext().getAuthentication();
+      if (authentication != null && authentication.getDetails() instanceof PulseContext context) {
+        auditService.log(AuditEventType.LOGIN_SUCCESS.name(), existingUser.getId(), existingUser.getEmail(),
+            context.getIpAddress(), context.getUserAgent(), null, context.getTraceId());
+      }
+
+      return new LoginResponseDTO(token, refreshToken, AuthRelatedEnum.BEARER.name(), expiresIn, existingUser.getId());
+    } catch (Exception ex) {
+      rateLimitService.recordFailedAttempts(emailKey);
       throw new InvalidInputException("Invalid credentials");
     }
-
-    String token = jwtService.generateToken(existingUser);
-    String refreshToken = refreshTokenService.createRefreshToken(existingUser);
-    Instant expiresIn = Instant.now().plusSeconds(jwtConfigProperties.getExpirationTime());
-
-    var authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication != null && authentication.getDetails() instanceof PulseContext context) {
-      auditService.log(AuditEventType.LOGIN_SUCCESS.name(), existingUser.getId(), existingUser.getEmail(),
-          context.getIpAddress(), context.getUserAgent(), null, context.getTraceId());
-    }
-
-    return new LoginResponseDTO(token, refreshToken, AuthRelatedEnum.BEARER.name(), expiresIn, existingUser.getId());
-
   }
 }
